@@ -1,0 +1,54 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# d1-manager Cursor Rules
+
+## 概述
+
+这是一个使用 SvelteKit 构建的 Cloudflare D1 数据库管理 Web UI 和 API。它允许用户通过图形界面管理数据库、表和记录，并提供 API 进行编程操作。
+
+## 关键技术栈
+
+*   **框架:** [@sveltejs/kit](https://kit.svelte.dev/)
+*   **UI 库:** [Tailwind CSS](https://tailwindcss.com/) + [DaisyUI](https://daisyui.com/) (注意：不是 shadcn/ui)
+*   **数据库:** [Cloudflare D1](https://developers.cloudflare.com/d1/)
+*   **部署:** [Cloudflare Pages](https://pages.cloudflare.com/)
+*   **AI 集成:** [Cloudflare AI](https://developers.cloudflare.com/ai/) / [OpenAI](https://openai.com/) (用于语义查询)
+*   **国际化:** [svelte-i18n](https://github.com/kaisermann/svelte-i18n)
+
+## 项目结构
+
+*   `src/routes`: SvelteKit 路由定义。
+    *   `src/routes/api`: 后端 API 端点。
+    *   `src/routes/db/[database]/[table]`: 数据库和表管理的具体页面。
+*   `src/lib`: 可重用的库代码。
+    *   `src/lib/server`: 仅在服务端运行的代码。
+        *   `src/lib/server/d1.ts`: Cloudflare D1 Shim/兼容层。
+        *   `src/lib/server/db`: 数据库管理逻辑 (如绑定解析 @src/lib/server/db/dbms.ts)。
+        *   `src/lib/server/ai`: AI 相关逻辑 (语义查询 @src/lib/server/ai/index.ts)。
+    *   `src/lib/plugin`: 用于数据库操作的可插拔组件 (如表格浏览器, SQL 查询器 @src/routes/db/[database]/[table]/+page.svelte)。
+    *   `src/lib/components`: (*可能包含* 自定义 Svelte 组件，但目前看到的主要是 DaisyUI 组件)。
+    *   `src/lib/storage.ts`: 浏览器本地存储的封装。
+    *   `src/lib/i18n.ts`: 国际化配置。
+*   `src/hooks.server.ts`: 服务端钩子，用于处理请求、注入 locals 等。
+*   `src/app.d.ts`: 全局类型定义，特别是 `App.Locals` (用于传递 D1 绑定) 和 `App.Platform` (用于访问 Cloudflare 环境变量和绑定)。
+*   `locales/`: 国际化翻译文件。
+*   `svelte.config.js`: SvelteKit 配置文件 (包含 Cloudflare Adapter)。
+*   `wrangler.toml`: (如果使用 Wrangler CLI 本地开发) Cloudflare Worker/Pages 配置文件，包含 D1 绑定。
+*   `package.json`: 项目依赖和脚本。
+
+## 核心概念
+
+*   **D1 绑定:** Cloudflare D1 数据库通过环境变量 (`DB_*` 或 `__D1_BETA__DB*`) 绑定到 Pages/Worker 环境。这些绑定在 `src/hooks.server.ts` 中通过 `src/lib/server/db/dbms.ts` 解析并添加到 `event.locals.db` 中。
+*   **UI 组件:** 主要使用 Tailwind CSS 工具类和 DaisyUI 预设组件 (`btn`, `card`, `select`, `navbar` 等)。
+*   **API 路由:** `src/routes/api` 下的文件定义了与前端交互的 API 端点，用于获取数据库信息、执行查询等。
+*   **插件系统:** 在 `src/routes/db/[database]/[table]/+page.svelte` 中，通过动态导入加载不同的功能插件 (`$lib/plugin/*.svelte`)，如表格浏览、SQL 执行、记录添加等。
+
+## 开发注意事项
+
+*   需要配置 Cloudflare Pages 并绑定 D1 数据库。
+*   环境变量用于配置 D1 绑定 (`DB_*`)、AI 后端 (如 `OPENAI_API_KEY`, `AI`) 和其他选项 (`SHOW_INTERNAL_TABLES`)。
+*   UI 主要通过 DaisyUI 主题进行定制 (`theme-change` 库用于切换主题)。
+*   使用 `pnpm` 作为包管理器。
